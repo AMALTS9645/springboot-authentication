@@ -1,69 +1,32 @@
  //code-start
 package com.example.loginapi;
 
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.web.authentication.AuthenticationFailureHandler;
-
-import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.AuthenticationPrincipal;
-import javax.annotation.PostConstruct;
 import javax.validation.constraints.NotBlank;
 import java.util.Optional;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/login")
 public class LoginController {
 
-    private final UserDetailsService userDetailsService;
-
-    public LoginController(UserDetailsService userDetailsService) {
-        this.userDetailsService = userDetailsService;
-    }
-
     @PostMapping
     public String login(@NotBlank @RequestParam("username") String username,
                         @NotBlank @RequestParam("password") String password) {
-        AuthenticationManager authenticationManager = SecurityContextHolder.getContext().getAuthentication().getProvider(0);
-        UserDetails userDetails = userDetailsService.loadUserByUsername(username);
-        if (userDetails != null && authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(userDetails.getUsername(), password))) {
-            @AuthenticationPrincipal UserDetails user = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-            String mfaToken = generateMfaToken(user.getUsername());
-            // Send MFA token to user's email or mobile
-            return "Login successful for user: " + user.getUsername() + ". MFA token: " + mfaToken;
-        }
-        return "Authentication failed";
-    }
 
-    private String generateMfaToken(String username) {
-        // Generate a random token and store it in a database with a timestamp
-        String token = UUID.randomUUID().toString();
-        // Store the token in the database with the username and timestamp
-        // ...
-        return token;
+        // Add authentication logic here
+        // For now, we'll just return a success message
+        return "Login successful for user: " + username;
     }
 }
 
 @Configuration
 @EnableWebSecurity
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
-
-    @Autowired
-    private UserDetailsService userDetailsService;
-
-    @Autowired
-    private AuthenticationFailureHandler authenticationFailureHandler;
-
-    @Autowired
-    private LoginController loginController;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -74,23 +37,17 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .formLogin()
                 .loginPage("/login")
-                .failureHandler(authenticationFailureHandler)
                 .permitAll();
-
-        http.csrf().disable(); // Disable CSRF to allow login API to be accessible from different origins
-    }
-
-    @Override
-    protected void configure(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(userDetailsService).passwordEncoder(new BCryptPasswordEncoder());
     }
 }
 //code-end
 
-// Security: UserDetailsService should retrieve user details from a secure database or authentication provider.
-// Security: AuthenticationFailureHandler should be configured to handle authentication failure scenarios securely.
-// Security: Consider implementing CSRF protection for other parts of the application where necessary.
-// Security: MFA token should be securely generated and transmitted to the user, and validated during the MFA verification step.
+// Security: The WebSecurityConfig class should be enhanced with proper user authentication and authorization mechanisms.
+// Security: Use password encryption with a strong algorithm like BCrypt for storing user passwords.
+// Security: Implement measures to prevent CSRF attacks, such as CSRF token validation.
+// Security: Add input validation and sanitization to prevent SQL injection and XSS attacks.
+// Security: Configure HTTPS to secure data transmission.
+// Security: Apply rate limiting and account lockout policies to protect against brute-force attacks.
 #!/usr/bin/env mvn
 # Maven pom.xml configuration for Spring Boot project
 
